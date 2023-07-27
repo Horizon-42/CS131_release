@@ -20,7 +20,15 @@ def camera_from_world_transform(d: float = 1.0) -> np.ndarray:
     """
     T = np.eye(4)
     # YOUR CODE HERE
-    pass
+    T[:3, 3] = [0, 0, d]
+    theta = -135/180*np.pi
+    T[:3, :3] = np.array(
+        [
+            [np.cos(theta), 0, -np.sin(theta)],
+            [0, 1, 0],
+            [np.sin(theta), 0, np.cos(theta)]
+        ]
+    )
     # END YOUR CODE
     assert T.shape == (4, 4)
     return T
@@ -52,10 +60,12 @@ def apply_transform(T: np.ndarray, points: np.ndarray) -> Tuple[np.ndarray]:
     assert points.shape == (3, N)
 
     # You'll replace this!
-    points_transformed = np.zeros((3, N))
+    points_transformed = np.zeros((4, N))
 
     # YOUR CODE HERE
-    pass
+    points_transformed[:3, :] = points
+    points_transformed = camera_from_world_transform(1.0)@points_transformed
+    points_transformed = points_transformed[:3, :]
     # END YOUR CODE
 
     assert points_transformed.shape == (3, N)
