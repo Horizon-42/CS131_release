@@ -71,6 +71,13 @@ def apply_transform(T: np.ndarray, points: np.ndarray) -> Tuple[np.ndarray]:
     assert points_transformed.shape == (3, N)
     return points_transformed
 
+def get_line(p1, p2):
+    x1, y1 = p1
+    x2, y2 = p2
+    a = y2 - y1
+    b = x1 - x2
+    c = x2*y1 - x1*y2
+    return a, b, c
 
 def intersection_from_lines(
     a_0: np.ndarray, a_1: np.ndarray, b_0: np.ndarray, b_1: np.ndarray
@@ -90,17 +97,21 @@ def intersection_from_lines(
     """
     # Validate inputs
     assert a_0.shape == a_1.shape == b_0.shape == b_1.shape == (2,)
-    assert a_0.dtype == a_1.dtype == b_0.dtype == b_1.dtype == np.float
+    assert a_0.dtype == a_1.dtype == b_0.dtype == b_1.dtype == float
 
     # Intersection point between lines
     out = np.zeros(2)
 
     # YOUR CODE HERE
-    pass
+    A1, B1, C1 = get_line(a_0, a_1)
+    A2, B2, C2 = get_line(b_0, b_1)
+
+    m = np.array([[A1, B1], [A2, B2]], dtype=float)
+    out = np.linalg.inv(m)@np.array([-C1, -C2], dtype=float) # 在这里将方程组写成矩阵形式 然后求解
     # END YOUR CODE
 
     assert out.shape == (2,)
-    assert out.dtype == np.float
+    assert out.dtype == float
 
     return out
 
