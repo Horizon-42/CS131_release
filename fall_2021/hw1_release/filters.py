@@ -125,7 +125,21 @@ def cross_correlation(f, g):
 
     out = None
     ### YOUR CODE HERE
-    pass
+    Hi, Wi = f.shape
+    Hk, Wk = g.shape
+    out = np.zeros((Hi, Wi))
+
+    ### YOUR CODE HERE
+    h_s = Hk//2
+    w_s = Wk//2
+    print(h_s,w_s)
+    print(Hk, Wk)
+    
+    image_with_pad = zero_pad(f, h_s, w_s)
+
+    for hi in range(h_s,h_s+Hi):
+        for wi in range(w_s,w_s+Wi):
+            out[hi-h_s,wi-w_s] = np.sum(g[:,:]*image_with_pad[hi-h_s:hi-h_s+Hk,wi-w_s:wi-w_s+Wk])
     ### END YOUR CODE
 
     return out
@@ -147,7 +161,8 @@ def zero_mean_cross_correlation(f, g):
 
     out = None
     ### YOUR CODE HERE
-    pass
+    g_mean = np.mean(g)
+    out = cross_correlation(f, g-g_mean)
     ### END YOUR CODE
 
     return out
@@ -168,10 +183,36 @@ def normalized_cross_correlation(f, g):
     Returns:
         out: numpy array of shape (Hf, Wf).
     """
+    from matplotlib import pyplot as plt
 
     out = None
     ### YOUR CODE HERE
-    pass
+    g = g.astype(float)
+    f = f.astype(float)
+    g_norm = (g-np.mean(g))/np.std(g)
+    
+    ### YOUR CODE HERE
+    Hi, Wi = f.shape
+    Hk, Wk = g.shape
+    out = np.zeros((Hi, Wi))
+
+    ### YOUR CODE HERE
+    h_s = Hk//2
+    w_s = Wk//2
+    print(h_s,w_s)
+    print(Hk, Wk)
+    
+    image_with_pad = zero_pad(f, h_s, w_s)
+
+    for hi in range(h_s,h_s+Hi):
+        for wi in range(w_s,w_s+Wi):
+            patch_mean = np.mean(image_with_pad[hi-h_s:hi-h_s+Hk,wi-w_s:wi-w_s+Wk])
+            patch_std = np.std(image_with_pad[hi-h_s:hi-h_s+Hk,wi-w_s:wi-w_s+Wk])
+            out[hi-h_s,wi-w_s] = np.sum(g_norm[:,:]*(image_with_pad[hi-h_s:hi-h_s+Hk,wi-w_s:wi-w_s+Wk]-patch_mean)/patch_std)
+    ### END YOUR CODE
+
+    return out
+
     ### END YOUR CODE
 
     return out
