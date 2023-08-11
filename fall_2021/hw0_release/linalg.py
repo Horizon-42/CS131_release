@@ -16,7 +16,14 @@ def dot_product(a, b):
     """
     out = None
     ### YOUR CODE HERE
-    pass
+    assert a.shape[1] == b.shape[0]
+    x, n = a.shape
+    n, y = b.shape
+    out = np.zeros((x, y))
+    for i in range(x):
+        for j in range(y):
+            for k in range(n):
+                out[i][j] += a[i][k] * b[k][j]
     ### END YOUR CODE
     return out
 
@@ -37,7 +44,7 @@ def complicated_matrix_function(M, a, b):
     """
     out = None
     ### YOUR CODE HERE
-    pass
+    out = dot_product(a, b) * dot_product(M, a.T)
     ### END YOUR CODE
 
     return out
