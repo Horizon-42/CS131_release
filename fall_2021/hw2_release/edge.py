@@ -8,6 +8,7 @@ Python Version: 3.5+
 """
 
 import numpy as np
+import queue
 
 
 def conv(image, kernel):
@@ -157,7 +158,6 @@ def gradient(img):
     # theta[theta >= 360] -= 360
     theta = cv2.phase(Gx, Gy)/np.pi*180
 
-    print(theta)
     # END YOUR CODE
 
     return G, theta
@@ -229,11 +229,12 @@ def double_thresholding(img, high, low):
             higher threshold and greater than the lower threshold.
     """
 
-    strong_edges = np.zeros(img.shape, dtype=np.bool)
-    weak_edges = np.zeros(img.shape, dtype=np.bool)
+    strong_edges = np.zeros(img.shape, dtype=bool)
+    weak_edges = np.zeros(img.shape, dtype=bool)
 
     # YOUR CODE HERE
-    pass
+    strong_edges[img > high] = True
+    weak_edges[(img > low) & (img <= high)] = True
     # END YOUR CODE
 
     return strong_edges, weak_edges
@@ -285,7 +286,7 @@ def link_edges(strong_edges, weak_edges):
 
     H, W = strong_edges.shape
     indices = np.stack(np.nonzero(strong_edges)).T
-    edges = np.zeros((H, W), dtype=np.bool)
+    edges = np.zeros((H, W), dtype=bool)
 
     # Make new instances of arguments to leave the original
     # references intact
@@ -293,7 +294,24 @@ def link_edges(strong_edges, weak_edges):
     edges = np.copy(strong_edges)
 
     # YOUR CODE HERE
-    pass
+    weak_edges_pad = np.pad(weak_edges, ((1, 1), (1, 1)))
+    passed = np.zeros_like(weak_edges_pad)
+
+    def dfs(pt):
+        go = queue.Queue()
+        go.put(pt)
+        while not go.empty():
+            s = go.get()
+            edges[s[0]-1, s[1]-1] = True
+            passed[s[0], s[1]] = True
+            for k in range(-1, 2):
+                for l in range(-1, 2):
+                    ny, nx = s[0]+k, s[1]+l
+                    if not passed[ny, nx] and weak_edges_pad[ny, nx]:
+                        go.put([ny, nx])
+
+    for strong_pt in indices:
+        dfs(strong_pt+[1, 1])
     # END YOUR CODE
 
     return edges
@@ -312,7 +330,12 @@ def canny(img, kernel_size=5, sigma=1.4, high=20, low=15):
         edge: numpy array of shape(H, W).
     """
     # YOUR CODE HERE
-    pass
+    kernel = gaussian_kernel(kernel_size, sigma)
+    smoothed = conv(img, kernel)
+    G, theta = gradient(smoothed)
+    nms_edges = non_maximum_suppression(G, theta)
+    strong_edegs, weak_edges = double_thresholding(nms_edges, high, low)
+    edge = link_edges(strong_edegs, weak_edges)
     # END YOUR CODE
 
     return edge
@@ -352,7 +375,12 @@ def hough_transform(img):
     # Find rho corresponding to values in thetas
     # and increment the accumulator in the corresponding coordiate.
     # YOUR CODE HERE
-    pass
+    for i in range(len(ys)):
+        y = ys[i]
+        x = xs[i]
+        for j in range(num_thetas):
+            r = int(cos_t[j]*x+sin_t[j]*y)
+            accumulator[r+diag_len, j] += 1
     # END YOUR CODE
 
     return accumulator, rhos, thetas
