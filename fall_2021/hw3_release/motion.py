@@ -47,9 +47,15 @@ def lucas_kanade(img1, img2, keypoints, window_size=5):
         # locations can be computed using bilinear interpolation.
         y, x = int(round(y)), int(round(x))
 
-        ### YOUR CODE HERE
-        pass
-        ### END YOUR CODE
+        # YOUR CODE HERE
+        Ix_val = Ix[y - w: y + w + 1, x - w: x + w + 1]
+        Iy_val = Iy[y - w: y + w + 1, x - w: x + w + 1]
+        It_val = It[y - w: y + w + 1, x - w: x + w + 1].flatten()
+        A = np.c_[Ix_val.reshape(-1,), Iy_val.reshape(-1,)]
+        b = -It_val
+        v = np.linalg.inv(A.T @ A) @ A.T @ b
+        flow_vectors.append(v.flatten())
+        # END YOUR CODE
 
     flow_vectors = np.array(flow_vectors)
 
@@ -91,9 +97,9 @@ def iterative_lucas_kanade(img1, img2, keypoints, window_size=9, num_iters=7, g=
         x1 = int(round(x))
 
         # TODO: Compute inverse of G at point (x1, y1)
-        ### YOUR CODE HERE
+        # YOUR CODE HERE
         pass
-        ### END YOUR CODE
+        # END YOUR CODE
 
         # Iteratively update flow vector
         for k in range(num_iters):
@@ -103,9 +109,9 @@ def iterative_lucas_kanade(img1, img2, keypoints, window_size=9, num_iters=7, g=
             x2 = int(round(x + gx + vx))
 
             # TODO: Compute bk and vk = inv(G) x bk
-            ### YOUR CODE HERE
+            # YOUR CODE HERE
             pass
-            ### END YOUR CODE
+            # END YOUR CODE
 
             # Update flow vector by vk
             v += vk
@@ -119,7 +125,6 @@ def iterative_lucas_kanade(img1, img2, keypoints, window_size=9, num_iters=7, g=
 def pyramid_lucas_kanade(
     img1, img2, keypoints, window_size=9, num_iters=7, level=2, scale=2
 ):
-
     """Pyramidal Lucas Kanade method
 
     Args:
@@ -144,9 +149,9 @@ def pyramid_lucas_kanade(
     g = np.zeros(keypoints.shape)
 
     for L in range(level, -1, -1):
-        ### YOUR CODE HERE
+        # YOUR CODE HERE
         pass
-        ### END YOUR CODE
+        # END YOUR CODE
 
     d = g + d
     return d
@@ -166,9 +171,13 @@ def compute_error(patch1, patch2):
     """
     assert patch1.shape == patch2.shape, "Different patch shapes"
     error = 0
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    # YOUR CODE HERE
+    p1 = np.copy(patch1)
+    p2 = np.copy(patch2)
+    patch1_norm = (p1 - np.mean(p1)) / np.std(p1)
+    patch2_norm = (p2 - np.mean(p2)) / np.std(p2)
+    error = np.mean((patch1_norm - patch2_norm) ** 2)
+    # END YOUR CODE
     return error
 
 
@@ -180,7 +189,6 @@ def track_features(
     exclude_border=5,
     **kwargs
 ):
-
     """Track keypoints over multiple frames
 
     Args:
@@ -228,8 +236,8 @@ def track_features(
                 continue
 
             # Compute error between patches in image I and J
-            patchI = I[yi - w : yi + w + 1, xi - w : xi + w + 1]
-            patchJ = J[yj - w : yj + w + 1, xj - w : xj + w + 1]
+            patchI = I[yi - w: yi + w + 1, xi - w: xi + w + 1]
+            patchJ = J[yj - w: yj + w + 1, xj - w: xj + w + 1]
             error = compute_error(patchI, patchJ)
             if error > error_thresh:
                 continue
@@ -257,8 +265,8 @@ def IoU(bbox1, bbox2):
     x2, y2, w2, h2 = bbox2
     score = 0
 
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     return score
