@@ -52,9 +52,18 @@ def harris_corners(img, window_size=3, k=0.04):
     dx = filters.sobel_v(img)
     dy = filters.sobel_h(img)
 
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    # YOUR CODE HERE
+    Ix2 = convolve(dx**2, window)
+    Iy2 = convolve(dy**2, window)
+    Ixy = convolve(dx*dy, window)
+    M = np.zeros((H, W, 2, 2))
+    M[:, :, 0, 0] = Ix2
+    M[:, :, 0, 1] = Ixy
+    M[:, :, 1, 0] = Ixy
+    M[:, :, 1, 1] = Iy2
+
+    response = np.linalg.det(M) - k * (Ix2 + Iy2)**2
+    # END YOUR CODE
 
     return response
 
@@ -78,9 +87,9 @@ def simple_descriptor(patch):
         feature: 1D array of shape (H * W)
     """
     feature = []
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    # YOUR CODE HERE
+    feature = ((patch - np.mean(patch)) / np.std(patch)).flatten().tolist()
+    # END YOUR CODE
     return feature
 
 
@@ -133,9 +142,14 @@ def match_descriptors(desc1, desc2, threshold=0.5):
     M = desc1.shape[0]
     dists = cdist(desc1, desc2)
 
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    # YOUR CODE HERE
+    for i in range(M):
+        d = dists[i, :]
+        d_sorted = np.sort(d)
+        if d_sorted[0]/d_sorted[1] < threshold:
+            matches.append([i, np.argmin(d)])
+    matches = np.asarray(matches).reshape(-1, 2)
+    # END YOUR CODE
 
     return matches
 
@@ -166,13 +180,13 @@ def fit_affine_matrix(p1, p2):
     p1 = pad(p1)
     p2 = pad(p2)
 
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    # YOUR CODE HERE
+    H, _, _, _ = np.linalg.lstsq(p2, p1)
+    # END YOUR CODE
 
     # Sometimes numerical issues cause least-squares to produce the last
     # column which is not exactly [0, 0, 1]
-    H[:,2] = np.array([0, 0, 1])
+    H[:, 2] = np.array([0, 0, 1])
     return H
 
 
@@ -218,14 +232,14 @@ def ransac(keypoints1, keypoints2, matches, n_iters=200, threshold=20):
     N = matches.shape[0]
     n_samples = int(N * 0.2)
 
-    matched1 = pad(keypoints1[matches[:,0]])
-    matched2 = pad(keypoints2[matches[:,1]])
+    matched1 = pad(keypoints1[matches[:, 0]])
+    matched2 = pad(keypoints2[matches[:, 1]])
 
     max_inliers = np.zeros(N, dtype=bool)
     n_inliers = 0
 
     # RANSAC iteration start
-    
+
     # Note: while there're many ways to do random sampling, please use
     # `np.random.shuffle()` followed by slicing out the first `n_samples`
     # matches here in order to align with the auto-grader.
@@ -237,13 +251,25 @@ def ransac(keypoints1, keypoints2, matches, n_iters=200, threshold=20):
         sample2 = pad(keypoints2[samples[:,1]])
     '''
 
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    # YOUR CODE HERE
+    for i in range(n_iters):
+        np.random.shuffle(matches)
+        samples = matches[:n_samples]
+        sample1 = pad(keypoints1[samples[:, 0]])
+        sample2 = pad(keypoints2[samples[:, 1]])
+        h, _, _, _ = np.linalg.lstsq(sample2, sample1)
+        inliers = np.linalg.norm(matched2.dot(
+            h) - matched1, axis=1) < threshold  # 主要错误就是这里的dist算错了
+        if np.sum(inliers) > n_inliers:
+            n_inliers = np.sum(inliers)
+            max_inliers = inliers
+            H, _, _, _ = np.linalg.lstsq(
+                matched2[max_inliers], matched1[max_inliers])
+    # END YOUR CODE
     return H, orig_matches[max_inliers]
 
 
-def hog_descriptor(patch, pixels_per_cell=(8,8)):
+def hog_descriptor(patch, pixels_per_cell=(8, 8)):
     """
     Generating hog descriptor by the following steps:
 
@@ -262,9 +288,9 @@ def hog_descriptor(patch, pixels_per_cell=(8,8)):
         block: 1D patch descriptor array of shape ((H*W*n_bins)/(M*N))
     """
     assert (patch.shape[0] % pixels_per_cell[0] == 0),\
-                'Heights of patch and cell do not match'
+        'Heights of patch and cell do not match'
     assert (patch.shape[1] % pixels_per_cell[1] == 0),\
-                'Widths of patch and cell do not match'
+        'Widths of patch and cell do not match'
 
     n_bins = 9
     degrees_per_bin = 180 // n_bins
@@ -288,9 +314,9 @@ def hog_descriptor(patch, pixels_per_cell=(8,8)):
     cells = np.zeros((rows, cols, n_bins))
 
     # Compute histogram per cell
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
 
     return block
 
@@ -312,21 +338,22 @@ def linear_blend(img1_warped, img2_warped):
     Returns:
         merged: Merged image in output space
     """
-    out_H, out_W = img1_warped.shape # Height and width of output space
+    out_H, out_W = img1_warped.shape  # Height and width of output space
     img1_mask = (img1_warped != 0)  # Mask == 1 inside the image
     img2_mask = (img2_warped != 0)  # Mask == 1 inside the image
 
     # Find column of middle row where warped image 1 ends
     # This is where to end weight mask for warped image 1
-    right_margin = out_W - np.argmax(np.fliplr(img1_mask)[out_H//2, :].reshape(1, out_W), 1)[0]
+    right_margin = out_W - \
+        np.argmax(np.fliplr(img1_mask)[out_H//2, :].reshape(1, out_W), 1)[0]
 
     # Find column of middle row where warped image 2 starts
     # This is where to start weight mask for warped image 2
     left_margin = np.argmax(img2_mask[out_H//2, :].reshape(1, out_W), 1)[0]
 
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     return merged
 
@@ -360,15 +387,13 @@ def stitch_multiple_images(imgs, desc_func=simple_descriptor, patch_size=5):
         descriptors.append(desc)
     # Match keypoints in neighboring images
     matches = []  # matches[i] corresponds to matches between
-                  # descriptors[i] and descriptors[i+1]
+    # descriptors[i] and descriptors[i+1]
     for i in range(len(imgs)-1):
         mtchs = match_descriptors(descriptors[i], descriptors[i+1], 0.7)
         matches.append(mtchs)
 
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     return panorama
-
-
