@@ -257,14 +257,14 @@ def ransac(keypoints1, keypoints2, matches, n_iters=200, threshold=20):
         samples = matches[:n_samples]
         sample1 = pad(keypoints1[samples[:, 0]])
         sample2 = pad(keypoints2[samples[:, 1]])
-        h, _, _, _ = np.linalg.lstsq(sample2, sample1)
+        h, _, _, _ = np.linalg.lstsq(sample2, sample1, rcond=None)
         inliers = np.linalg.norm(matched2.dot(
             h) - matched1, axis=1) < threshold  # 主要错误就是这里的dist算错了
         if np.sum(inliers) > n_inliers:
             n_inliers = np.sum(inliers)
             max_inliers = inliers
             H, _, _, _ = np.linalg.lstsq(
-                matched2[max_inliers], matched1[max_inliers])
+                matched2[max_inliers], matched1[max_inliers], rcond=None)
     # END YOUR CODE
     return H, orig_matches[max_inliers]
 
@@ -315,7 +315,14 @@ def hog_descriptor(patch, pixels_per_cell=(8, 8)):
 
     # Compute histogram per cell
     # YOUR CODE HERE
-    pass
+    for i in range(rows):
+        for j in range(cols):
+            for k in range(pixels_per_cell[0]):
+                for l in range(pixels_per_cell[1]):
+                    cells[i, j, int(theta_cells[i, j, k, l] //
+                                    degrees_per_bin) % 9] += G_cells[i, j, k, l]
+    block = cells.flatten()
+    block = block / np.linalg.norm(block)
     # YOUR CODE HERE
 
     return block
@@ -352,7 +359,16 @@ def linear_blend(img1_warped, img2_warped):
     left_margin = np.argmax(img2_mask[out_H//2, :].reshape(1, out_W), 1)[0]
 
     # YOUR CODE HERE
-    pass
+    liner_weights = [
+        (i-left_margin)/(right_margin-left_margin) for i in range(left_margin, right_margin)]
+    left_weight_mat = np.zeros_like(img1_warped, dtype=float)
+    left_weight_mat[:, :left_margin] = 1.
+    left_weight_mat[:, left_margin:right_margin] = [1-w for w in liner_weights]
+    right_weighted_mat = np.zeros_like(left_weight_mat)
+    right_weighted_mat[:, right_margin:] = 1.
+    right_weighted_mat[:, left_margin:right_margin] = liner_weights
+
+    merged = img1_warped*left_weight_mat+img2_warped*right_weighted_mat
     # END YOUR CODE
 
     return merged
@@ -393,7 +409,26 @@ def stitch_multiple_images(imgs, desc_func=simple_descriptor, patch_size=5):
         matches.append(mtchs)
 
     # YOUR CODE HERE
-    pass
+    H_vec = [np.eye(3)]
+    for i in range(len(imgs)-1):
+        H, _ = ransac(keypoints[i], keypoints[i+1], matches[i])
+        H_vec.append(H@H_vec[-1])
+
+    output_shape, offset = get_output_space(imgs[0], imgs[1:], H_vec[1:])
+    img_wraped_vec = [warp_image(
+        imgs[i], H_vec[i], output_shape, offset) for i in range(len(imgs))]
+    img_mask_vec = [img_wraped != -1 for img_wraped in img_wraped_vec]
+    for i in range(len(imgs)):
+        img_wraped_vec[i][~img_mask_vec[i]] = 0
+
+    overlap = np.zeros_like(img_wraped_vec[0], dtype=float)
+    for i in range(len(imgs)):
+        overlap += img_mask_vec[i]*1.0
+
+    panorama = np.zeros_like(img_wraped_vec[0])
+    for i in range(len(imgs)):
+        panorama += img_wraped_vec[i]
+    panorama /= np.maximum(overlap, 1)
     # END YOUR CODE
 
     return panorama
