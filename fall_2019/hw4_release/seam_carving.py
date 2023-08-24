@@ -29,9 +29,11 @@ def energy_function(image):
     out = np.zeros((H, W))
     gray_image = color.rgb2gray(image)
 
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    # YOUR CODE HERE
+    gx = np.gradient(gray_image, axis=1)
+    gy = np.gradient(gray_image, axis=0)
+    out = np.abs(gx) + np.abs(gy)
+    # END YOUR CODE
 
     return out
 
@@ -70,15 +72,24 @@ def compute_cost(image, energy, axis=1):
     H, W = energy.shape
 
     cost = np.zeros((H, W))
-    paths = np.zeros((H, W), dtype=np.int)
+    paths = np.zeros((H, W), dtype=int)
 
     # Initialization
     cost[0] = energy[0]
     paths[0] = 0  # we don't care about the first row of paths
 
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    # YOUR CODE HERE
+    for i in range(1, H):
+        roll_left = np.roll(cost[i-1, :], -1)
+        roll_right = np.roll(cost[i-1, :], 1)
+        paths[i, 0] = np.argmin(cost[i-1, :2])
+        paths[i, W-1] = np.argmin(cost[i-1, W-2:W]) - 1
+        paths[i, 1:W-1] = np.argmin(np.vstack(
+            (roll_right[1:W-1], cost[i-1, 1:W-1], roll_left[1:W-1])), axis=0) - 1  # 注意这里的排序和滚动方向相反
+
+        cost[i, :] = energy[i, :] + cost[i-1, paths[i, :] + np.arange(W)]
+
+    # END YOUR CODE
 
     if axis == 0:
         cost = np.transpose(cost, (1, 0))
@@ -86,7 +97,7 @@ def compute_cost(image, energy, axis=1):
 
     # Check that paths only contains -1, 0 or 1
     assert np.all(np.any([paths == 1, paths == 0, paths == -1], axis=0)), \
-           "paths contains other values than -1, 0 or 1"
+        "paths contains other values than -1, 0 or 1"
 
     return cost, paths
 
@@ -109,17 +120,19 @@ def backtrack_seam(paths, end):
     """
     H, W = paths.shape
     # initialize with -1 to make sure that everything gets modified
-    seam = - np.ones(H, dtype=np.int)
+    seam = - np.ones(H, dtype=int)
 
     # Initialization
     seam[H-1] = end
 
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    # YOUR CODE HERE
+    for i in range(H-1, 0, -1):
+        seam[i-1] = seam[i]+paths[i, seam[i]]
+    # END YOUR CODE
 
     # Check that seam only contains values in [0, W-1]
-    assert np.all(np.all([seam >= 0, seam < W], axis=0)), "seam contains values out of bounds"
+    assert np.all(np.all([seam >= 0, seam < W], axis=0)
+                  ), "seam contains values out of bounds"
 
     return seam
 
@@ -144,14 +157,15 @@ def remove_seam(image, seam):
 
     out = None
     H, W, C = image.shape
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
     out = np.squeeze(out)  # remove last dimension if C == 1
 
     # Make sure that `out` has same type as `image`
     assert out.dtype == image.dtype, \
-       "Type changed between image (%s) and out (%s) in remove_seam" % (image.dtype, out.dtype)
+        "Type changed between image (%s) and out (%s) in remove_seam" % (
+            image.dtype, out.dtype)
 
     return out
 
@@ -161,7 +175,7 @@ def reduce(image, size, axis=1, efunc=energy_function, cfunc=compute_cost, bfunc
 
     At each step, we remove the lowest energy seam from the image. We repeat the process
     until we obtain an output of desired size.
-    
+
     SUPER IMPORTANT: IF YOU WANT TO PREVENT CASCADING ERRORS IN THE CODE OF reduce(), USE FUNCTIONS:
         - efunc (instead of energy_function)
         - cfunc (instead of compute_cost)
@@ -192,9 +206,9 @@ def reduce(image, size, axis=1, efunc=energy_function, cfunc=compute_cost, bfunc
 
     assert size > 0, "Size must be greater than zero"
 
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     assert out.shape[1] == size, "Output doesn't have the right shape"
 
@@ -219,9 +233,9 @@ def duplicate_seam(image, seam):
 
     H, W, C = image.shape
     out = np.zeros((H, W + 1, C))
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     return out
 
@@ -231,7 +245,7 @@ def enlarge_naive(image, size, axis=1, efunc=energy_function, cfunc=compute_cost
 
     At each step, we duplicate the lowest energy seam from the image. We repeat the process
     until we obtain an output of desired size.
-    
+
     SUPER IMPORTANT: IF YOU WANT TO PREVENT CASCADING ERRORS IN THE CODE OF enlarge_naive(), USE FUNCTIONS:
         - efunc (instead of energy_function)
         - cfunc (instead of compute_cost)
@@ -260,9 +274,9 @@ def enlarge_naive(image, size, axis=1, efunc=energy_function, cfunc=compute_cost
 
     assert size > W, "size must be greather than %d" % W
 
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     if axis == 0:
         out = np.transpose(out, (1, 0, 2))
@@ -387,9 +401,9 @@ def enlarge(image, size, axis=1, efunc=energy_function, cfunc=compute_cost, dfun
 
     assert size <= 2 * W, "size must be smaller than %d" % (2 * W)
 
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     if axis == 0:
         out = np.transpose(out, (1, 0, 2))
@@ -429,13 +443,13 @@ def compute_forward_cost(image, energy):
             cost[0, j] += np.abs(image[0, j+1] - image[0, j-1])
     paths[0] = 0  # we don't care about the first row of paths
 
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     # Check that paths only contains -1, 0 or 1
     assert np.all(np.any([paths == 1, paths == 0, paths == -1], axis=0)), \
-           "paths contains other values than -1, 0 or 1"
+        "paths contains other values than -1, 0 or 1"
 
     return cost, paths
 
@@ -468,11 +482,11 @@ def reduce_fast(image, size, axis=1, efunc=energy_function, cfunc=compute_cost):
 
     assert size > 0, "Size must be greater than zero"
 
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     # Delete that line, just here for the autograder to pass setup checks
     out = reduce(image, size, 1, efunc, cfunc)
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     assert out.shape[1] == size, "Output doesn't have the right shape"
 
@@ -499,9 +513,9 @@ def remove_object(image, mask):
     H, W, _ = image.shape
     out = np.copy(image)
 
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     assert out.shape == image.shape
 
