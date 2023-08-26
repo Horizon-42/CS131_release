@@ -158,7 +158,10 @@ def remove_seam(image, seam):
     out = None
     H, W, C = image.shape
     # YOUR CODE HERE
-    pass
+    out = np.zeros((H, W-1, C), dtype=image.dtype)
+    for i in range(H):
+        out[i, :seam[i]] = image[i, :seam[i]]
+        out[i, seam[i]:] = image[i, seam[i]+1:]
     # END YOUR CODE
     out = np.squeeze(out)  # remove last dimension if C == 1
 
@@ -207,9 +210,14 @@ def reduce(image, size, axis=1, efunc=energy_function, cfunc=compute_cost, bfunc
     assert size > 0, "Size must be greater than zero"
 
     # YOUR CODE HERE
-    pass
+    for i in range(size, W):
+        vcost, vpaths = cfunc(None, efunc(out))
+        end = np.argmin(vcost[-1])
+        seam = bfunc(vpaths, end)
+        out = rfunc(out, seam)
     # END YOUR CODE
 
+    print(out.shape[1], size)
     assert out.shape[1] == size, "Output doesn't have the right shape"
 
     if axis == 0:
@@ -234,7 +242,10 @@ def duplicate_seam(image, seam):
     H, W, C = image.shape
     out = np.zeros((H, W + 1, C))
     # YOUR CODE HERE
-    pass
+    for i in range(H):
+        out[i, :seam[i]+1] = image[i, :seam[i]+1]
+        out[i, seam[i]+1] = image[i, seam[i]]
+        out[i, seam[i]+2:] = image[i, seam[i]+1:]
     # END YOUR CODE
 
     return out
@@ -275,7 +286,11 @@ def enlarge_naive(image, size, axis=1, efunc=energy_function, cfunc=compute_cost
     assert size > W, "size must be greather than %d" % W
 
     # YOUR CODE HERE
-    pass
+    for i in range(W, size):
+        vcost, vpaths = cfunc(None, efunc(out))
+        end = np.argmin(vcost[-1])
+        seam = bfunc(vpaths, end)
+        out = dfunc(out, seam)
     # END YOUR CODE
 
     if axis == 0:
@@ -334,7 +349,7 @@ def find_seams(image, k, axis=1, efunc=energy_function, cfunc=compute_cost, bfun
     #    [[0, 1, 0, 2],
     #     [1, 0, 2, 0],
     #     [1, 0, 0, 2]]
-    seams = np.zeros((H, W), dtype=np.int)
+    seams = np.zeros((H, W), dtype=int)
 
     # Iteratively find k seams for removal
     for i in range(k):
@@ -402,7 +417,17 @@ def enlarge(image, size, axis=1, efunc=energy_function, cfunc=compute_cost, dfun
     assert size <= 2 * W, "size must be smaller than %d" % (2 * W)
 
     # YOUR CODE HERE
-    pass
+    K = size-W
+    seams = find_seams(out, k=K, efunc=efunc,
+                       cfunc=cfunc, bfunc=bfunc, rfunc=rfunc)
+    last_seam = np.zeros((H,), dtype=int)
+    last_seam[:] = W
+    for k in range(K):
+        seam = np.where(seams == k+1)[1].astype(int)
+        seam[np.where(seam > last_seam)] += 1
+        out = dfunc(out, seam)
+        last_seam = seam
+
     # END YOUR CODE
 
     if axis == 0:
@@ -434,7 +459,7 @@ def compute_forward_cost(image, energy):
     H, W = image.shape
 
     cost = np.zeros((H, W))
-    paths = np.zeros((H, W), dtype=np.int)
+    paths = np.zeros((H, W), dtype=int)
 
     # Initialization
     cost[0] = energy[0]
