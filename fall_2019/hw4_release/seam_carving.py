@@ -209,8 +209,8 @@ def reduce(image, size, axis=1, efunc=energy_function, cfunc=compute_cost, bfunc
     assert size > 0, "Size must be greater than zero"
 
     # YOUR CODE HERE
-    for i in range(size, W):
-        vcost, vpaths = cfunc(None, efunc(out))
+    while out.shape[1] > size:
+        vcost, vpaths = cfunc(out, efunc(out))
         end = np.argmin(vcost[-1])
         seam = bfunc(vpaths, end)
         out = rfunc(out, seam)
@@ -468,27 +468,37 @@ def compute_forward_cost(image, energy):
     paths[0] = 0  # we don't care about the first row of paths
 
     # YOUR CODE HERE
-    for i in range(1, H):
-        cost_tmp0 = cost[i-1, :2] + \
-            [np.abs(image[i, 1]-image[i, 0]),
-             np.abs(image[i, 1]-image[i, 0])+np.abs(image[i-1, 0]-image[i, 1])]
-        paths[i, 0] = np.argmin(cost_tmp0, axis=0)
-        cost[i, 0] = cost_tmp0[paths[i, 0]]
+    for row in range(1, H):
+        # 先获取之前的像素相邻三个能量值
+        upL = np.insert(cost[row - 1, 0:W - 1], 0, 1e10, axis=0)
+        upM = cost[row - 1, :]
+        upR = np.insert(cost[row - 1, 1:W], W - 1, 1e10, axis=0)
+        # 拼接可以使用np.concatenate，但是np.r_或np.c_更高效
+        # upchoices = np.r_[upL, upM, upR].reshape(3, -1)
+        # upchoices = np.concatenate((upL, upM, upR), axis=0).reshape(3, -1)
 
-        cost_tmpW = cost[i-1, W-2:W] + \
-            [np.abs(image[i, W-2]-image[i, W-1])+np.abs(image[i-1, W-1]-image[i, W-2]),
-             np.abs(image[i, W-2]-image[i, W-1])]
-        paths[i, W-1] = np.argmin(cost_tmpW, axis=0) - 1
-        cost[i, W-1] = cost_tmpW[paths[i, W-1]+1]
+        # I(i,j+1)
+        I_i_j_P = np.insert(image[row, 0:W-1], 0, 0, axis=0)
+        # I(i,j-1)
+        I_i_j_M = np.insert(image[row, 1:W], W-1, 0, axis=0)
+        # I(i-1.j)
+        I_M = image[row-1, :]
 
-        for j in range(1, W-1):
-            cost_tmp = cost[i-1, j-1:j+2] + \
-                [np.abs(image[i, j+1]-image[i, j-1])+np.abs(image[i-1, j]-image[i, j-1]),
-                 np.abs(image[i, j+1]-image[i, j-1]),
-                 np.abs(image[i, j+1]-image[i, j-1])+np.abs(image[i-1, j]-image[i, j+1])]
-            paths[i, j] = np.argmin(cost_tmp, axis=0) - 1
-            cost[i, j] = cost_tmp[paths[i, j]+1]
+        C_V = abs(I_i_j_P - I_i_j_M)
+        C_V[0] = 0
+        C_V[-1] = 0
 
+        C_L = C_V + abs(I_M - I_i_j_P)
+        C_L[0] = 0
+
+        C_R = C_V + abs(I_M - I_i_j_M)
+        C_R[-1] = 0
+
+        upchoices = np.concatenate(
+            (upL+C_L, upM+C_V, upR+C_R), axis=0).reshape(3, -1)
+
+        cost[row] = energy[row] + np.min(upchoices, axis=0)
+        paths[row] = np.argmin(upchoices, axis=0) - 1  # -1,0,1分别表示左中右
     # END YOUR CODE
 
     # Check that paths only contains -1, 0 or 1
@@ -527,7 +537,23 @@ def reduce_fast(image, size, axis=1, efunc=energy_function, cfunc=compute_cost):
     assert size > 0, "Size must be greater than zero"
 
     # YOUR CODE HERE
-    out = reduce(image, size, axis, efunc, cfunc)
+    energy = efunc(out)
+    while out.shape[1] > size:
+        cost, paths = cfunc(out, energy)
+        end = np.argmin(cost[-1])
+        seam = backtrack_seam(paths, end)
+        out = remove_seam(out, seam)
+
+        l, r = np.min(seam), np.max(seam)
+        if l <= 3 and r >= out.shape[1]-3:
+            energy = efunc(out)
+        elif l <= 3:
+            energy = np.c_[efunc(out[:, :r+2])[:, :-1], energy[:, r+2:]]
+        elif r >= out.shape[1]-3:
+            energy = np.c_[energy[:, :l-1], efunc(out[:, l-3:])[:, 2:]]
+        else:
+            energy = np.c_[energy[:, :l-1], efunc(out[:, l-3:r+2])[:, 2:-1],
+                           energy[:, r+2:]]
     # END YOUR CODE
 
     assert out.shape[1] == size, "Output doesn't have the right shape"
