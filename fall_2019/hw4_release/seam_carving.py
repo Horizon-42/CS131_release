@@ -88,7 +88,6 @@ def compute_cost(image, energy, axis=1):
             (roll_right[1:W-1], cost[i-1, 1:W-1], roll_left[1:W-1])), axis=0) - 1  # 注意这里的排序和滚动方向相反
 
         cost[i, :] = energy[i, :] + cost[i-1, paths[i, :] + np.arange(W)]
-
     # END YOUR CODE
 
     if axis == 0:
@@ -469,7 +468,27 @@ def compute_forward_cost(image, energy):
     paths[0] = 0  # we don't care about the first row of paths
 
     # YOUR CODE HERE
-    pass
+    for i in range(1, H):
+        cost_tmp0 = cost[i-1, :2] + \
+            [np.abs(image[i, 1]-image[i, 0]),
+             np.abs(image[i, 1]-image[i, 0])+np.abs(image[i-1, 0]-image[i, 1])]
+        paths[i, 0] = np.argmin(cost_tmp0, axis=0)
+        cost[i, 0] = cost_tmp0[paths[i, 0]]
+
+        cost_tmpW = cost[i-1, W-2:W] + \
+            [np.abs(image[i, W-2]-image[i, W-1])+np.abs(image[i-1, W-1]-image[i, W-2]),
+             np.abs(image[i, W-2]-image[i, W-1])]
+        paths[i, W-1] = np.argmin(cost_tmpW, axis=0) - 1
+        cost[i, W-1] = cost_tmpW[paths[i, W-1]+1]
+
+        for j in range(1, W-1):
+            cost_tmp = cost[i-1, j-1:j+2] + \
+                [np.abs(image[i, j+1]-image[i, j-1])+np.abs(image[i-1, j]-image[i, j-1]),
+                 np.abs(image[i, j+1]-image[i, j-1]),
+                 np.abs(image[i, j+1]-image[i, j-1])+np.abs(image[i-1, j]-image[i, j+1])]
+            paths[i, j] = np.argmin(cost_tmp, axis=0) - 1
+            cost[i, j] = cost_tmp[paths[i, j]+1]
+
     # END YOUR CODE
 
     # Check that paths only contains -1, 0 or 1
@@ -508,9 +527,7 @@ def reduce_fast(image, size, axis=1, efunc=energy_function, cfunc=compute_cost):
     assert size > 0, "Size must be greater than zero"
 
     # YOUR CODE HERE
-    # Delete that line, just here for the autograder to pass setup checks
-    out = reduce(image, size, 1, efunc, cfunc)
-    pass
+    out = reduce(image, size, axis, efunc, cfunc)
     # END YOUR CODE
 
     assert out.shape[1] == size, "Output doesn't have the right shape"
