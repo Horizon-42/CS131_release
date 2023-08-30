@@ -545,15 +545,19 @@ def reduce_fast(image, size, axis=1, efunc=energy_function, cfunc=compute_cost):
         out = remove_seam(out, seam)
 
         l, r = np.min(seam), np.max(seam)
-        if l <= 3 and r >= out.shape[1]-3:
-            energy = efunc(out)
-        elif l <= 3:
-            energy = np.c_[efunc(out[:, :r+2])[:, :-1], energy[:, r+2:]]
-        elif r >= out.shape[1]-3:
-            energy = np.c_[energy[:, :l-1], efunc(out[:, l-3:])[:, 2:]]
+        if l <= 3:
+            energy = np.concatenate([efunc(
+                out[:, :r+3])[:, :-2], energy[:, r+2:]], axis=1)
+        elif r >= out.shape[1]-4:
+            energy = np.concatenate(
+                [energy[:, :l-1], efunc(out[:, l-3:])[:, 2:]], axis=1)
         else:
-            energy = np.c_[energy[:, :l-1], efunc(out[:, l-3:r+2])[:, 2:-1],
-                           energy[:, r+2:]]
+            energy = np.concatenate([energy[:, :l-1], efunc(out[:, l-3:r+3])[:, 2:-2],
+                                    energy[:, r+2:]], axis=1)
+
+        # diff = np.where(np.abs(efunc(out) - energy) > 1e-16)
+        # print(diff[0].shape, diff[1].shape)
+        # energy = efunc(out)
     # END YOUR CODE
 
     assert out.shape[1] == size, "Output doesn't have the right shape"
@@ -582,7 +586,16 @@ def remove_object(image, mask):
     out = np.copy(image)
 
     # YOUR CODE HERE
-    pass
+    while np.sum(mask) > 0:
+        energy = energy_function(out)
+        weighted_energy = energy - 100 * mask
+        cost, paths = compute_forward_cost(out, weighted_energy)
+        end = np.argmin(cost[-1])
+        seam = backtrack_seam(paths, end)
+        out = remove_seam(out, seam)
+        mask = remove_seam(mask, seam)
+
+    out = enlarge(out, W)
     # END YOUR CODE
 
     assert out.shape == image.shape
