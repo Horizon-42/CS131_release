@@ -12,7 +12,9 @@ import random
 from scipy.spatial.distance import squareform, pdist
 from skimage.util import img_as_float
 
-### Clustering Methods
+# Clustering Methods
+
+
 def kmeans(features, k, num_iters=100):
     """ Use kmeans algorithm to group features into k clusters.
 
@@ -44,11 +46,27 @@ def kmeans(features, k, num_iters=100):
     assignments = np.zeros(N, dtype=np.uint32)
 
     for n in range(num_iters):
-        ### YOUR CODE HERE
-        pass
-        ### END YOUR CODE
+        # YOUR CODE HERE
+        origin_assignments = np.copy(assignments)
+        for i in range(N):
+            feat = features[i]
+            nearest = 0
+            min_dist = np.linalg.norm(feat-centers[0])
+            for j in range(1, k):
+                dist = np.linalg.norm(feat-centers[j])
+                if dist < min_dist:
+                    min_dist = dist
+                    nearest = j
+            assignments[i] = nearest
+        if np.all(origin_assignments == assignments):
+            break
+        for j in range(k):
+            # 注意 求均值需要指定维度
+            centers[j] = np.mean(features[assignments == j], axis=0)
+        # END YOUR CODE
 
     return assignments
+
 
 def kmeans_fast(features, k, num_iters=100):
     """ Use kmeans algorithm to group features into k clusters.
@@ -80,12 +98,18 @@ def kmeans_fast(features, k, num_iters=100):
     assignments = np.zeros(N, dtype=np.uint32)
 
     for n in range(num_iters):
-        ### YOUR CODE HERE
-        pass
-        ### END YOUR CODE
+        # YOUR CODE HERE
+        new_ass = np.argmin(
+            np.linalg.norm(np.repeat(features[:, np.newaxis, :], k, axis=1)-centers, axis=2), axis=1)
+        if np.all(new_ass == assignments):
+            break
+        assignments = new_ass
+        for j in range(k):
+            # 注意 求均值需要指定维度
+            centers[j] = np.mean(features[assignments == j], axis=0)
+        # END YOUR CODE
 
     return assignments
-
 
 
 def hierarchical_clustering(features, k):
@@ -120,8 +144,6 @@ def hierarchical_clustering(features, k):
             (e.g. i-th point is assigned to cluster assignments[i])
     """
 
-
-
     N, D = features.shape
 
     assert N >= k, 'Number of clusters cannot be greater than number of points'
@@ -132,14 +154,14 @@ def hierarchical_clustering(features, k):
     n_clusters = N
 
     while n_clusters > k:
-        ### YOUR CODE HERE
+        # YOUR CODE HERE
         pass
-        ### END YOUR CODE
+        # END YOUR CODE
 
     return assignments
 
 
-### Pixel-Level Features
+# Pixel-Level Features
 def color_features(img):
     """ Represents a pixel by its color.
 
@@ -153,11 +175,12 @@ def color_features(img):
     img = img_as_float(img)
     features = np.zeros((H*W, C))
 
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     return features
+
 
 def color_position_features(img):
     """ Represents a pixel by its color and position.
@@ -182,11 +205,12 @@ def color_position_features(img):
     color = img_as_float(img)
     features = np.zeros((H*W, C+2))
 
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     return features
+
 
 def my_features(img):
     """ Implement your own features
@@ -198,13 +222,13 @@ def my_features(img):
         features - array of (H * W, C)
     """
     features = None
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
     return features
 
 
-### Quantitative Evaluation
+# Quantitative Evaluation
 def compute_accuracy(mask_gt, mask):
     """ Compute the pixel-wise accuracy of a foreground-background segmentation
         given a ground truth segmentation.
@@ -222,11 +246,12 @@ def compute_accuracy(mask_gt, mask):
     """
 
     accuracy = None
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     return accuracy
+
 
 def evaluate_segmentation(mask_gt, segments):
     """ Compare the estimated segmentation with the ground truth.
