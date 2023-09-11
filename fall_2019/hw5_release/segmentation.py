@@ -155,7 +155,16 @@ def hierarchical_clustering(features, k):
 
     while n_clusters > k:
         # YOUR CODE HERE
-        pass
+        dist = squareform(pdist(centers))
+        np.fill_diagonal(dist, np.inf)
+        min_idx = np.argmin(dist)
+        min_idx = np.unravel_index(min_idx, dist.shape)
+        assignments[assignments == min_idx[1]] = min_idx[0]
+        centers[min_idx[0]] = np.mean(
+            features[assignments == min_idx[0]], axis=0)
+        centers = np.delete(centers, min_idx[1], axis=0)
+        assignments[assignments > min_idx[1]] -= 1
+        n_clusters -= 1
         # END YOUR CODE
 
     return assignments
@@ -176,7 +185,7 @@ def color_features(img):
     features = np.zeros((H*W, C))
 
     # YOUR CODE HERE
-    pass
+    features = img.reshape((H*W, C))
     # END YOUR CODE
 
     return features
@@ -206,7 +215,16 @@ def color_position_features(img):
     features = np.zeros((H*W, C+2))
 
     # YOUR CODE HERE
-    pass
+    color = color.reshape((H*W, C))
+    color = (color - np.mean(color, axis=0)) / np.std(color, axis=0)
+    y, x = np.mgrid[0:H, 0:W]
+    y = y.reshape((H*W, 1))
+    y = (y - np.mean(y, axis=0)) / np.std(y, axis=0)
+    x = x.reshape((H*W, 1))
+    x = (x - np.mean(x, axis=0)) / np.std(x, axis=0)
+    features = np.hstack((color, y, x))
+    # features = (features - np.mean(features, axis=0)) / \
+    #     np.std(features, axis=0)
     # END YOUR CODE
 
     return features
