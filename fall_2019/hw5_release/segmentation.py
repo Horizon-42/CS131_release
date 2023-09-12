@@ -241,8 +241,40 @@ def my_features(img):
     """
     features = None
     # YOUR CODE HERE
-    pass
+    import cv2
+    color = img_as_float(img)
+    H, W, C = color.shape
+    color = color.reshape((H*W, C))
+    color = (color - np.mean(color, axis=0)) / np.std(color, axis=0)
+    # gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    gray = np.mean(img, axis=2)
+    gray = gray.astype(np.float32)
+    grad_x = np.gradient(gray, axis=1)
+    grad_y = np.gradient(gray, axis=0)
+    grad_x = grad_x.reshape((H*W, 1))
+    grad_x = (grad_x - np.mean(grad_x, axis=0)) / np.std(grad_x, axis=0)
+    grad_y = grad_y.reshape((H*W, 1))
+    grad_y = (grad_y - np.mean(grad_y, axis=0)) / np.std(grad_y, axis=0)
+    features = np.hstack((color, grad_x, grad_y))
     # END YOUR CODE
+    return features
+
+
+def sift_features(img):
+    """ Extracts SIFT features from the image.
+
+    You should use the default value of the parameters for this function.
+
+    Args:
+        img - array of shape (H, W, C)
+
+    Returns:
+        features - array of (N, 128)
+    """
+    import cv2
+    sift = cv2.SIFT_create()
+    gray = np.mean(img*255, axis=2, dtype=np.uint8)
+    _, features = sift.detectAndCompute(gray, None)
     return features
 
 
@@ -265,7 +297,9 @@ def compute_accuracy(mask_gt, mask):
 
     accuracy = None
     # YOUR CODE HERE
-    pass
+    TP = np.sum(np.logical_and(mask_gt, mask))
+    TN = np.sum(np.logical_and(np.logical_not(mask_gt), np.logical_not(mask)))
+    accuracy = (TP + TN) / (mask_gt.shape[0] * mask_gt.shape[1])
     # END YOUR CODE
 
     return accuracy
