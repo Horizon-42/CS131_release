@@ -27,10 +27,16 @@ def compute_distances(X1, X2):
     #
     # HINT: Try to formulate the l2 distance using matrix multiplication
 
-    pass
+    dists = np.sqrt(np.sum(X1**2, axis=1).reshape(M, 1) +
+                    np.sum(X2**2, axis=1) - 2 * np.dot(X1, X2.T))
+
+    import scipy
+    dists_validiation = scipy.spatial.distance.cdist(X1, X2, 'euclidean')
+    assert np.allclose(dists, dists_validiation)
     # END YOUR CODE
 
-    assert dists.shape == (M, N), "dists should have shape (M, N), got %s" % dists.shape
+    assert dists.shape == (
+        M, N), "dists should have shape (M, N), got %s" % dists.shape
 
     return dists
 
@@ -48,7 +54,7 @@ def predict_labels(dists, y_train, k=1):
                 test data, where y[i] is the predicted label for the test point X[i].
     """
     num_test, num_train = dists.shape
-    y_pred = np.zeros(num_test, dtype=np.int)
+    y_pred = np.zeros(num_test, dtype=int)
 
     for i in range(num_test):
         # A list of length k storing the labels of the k nearest neighbors to
@@ -65,7 +71,8 @@ def predict_labels(dists, y_train, k=1):
         # label.
 
         # YOUR CODE HERE
-        pass
+        closest_y = y_train[np.argsort(dists[i])[:k]]
+        y_pred[i] = np.argmax(np.bincount(closest_y))
         # END YOUR CODE
 
     return y_pred
@@ -92,7 +99,7 @@ def split_folds(X_train, y_train, num_folds):
         y_train: numpy array of shape (N,) containing the label of each example
         num_folds: number of folds to split the data into
 
-    jeturns:
+    returns:
         X_trains: numpy array of shape (num_folds, train_size * (num_folds-1) / num_folds, D)
         y_trains: numpy array of shape (num_folds, train_size * (num_folds-1) / num_folds)
         X_vals: numpy array of shape (num_folds, train_size / num_folds, D)
@@ -105,13 +112,19 @@ def split_folds(X_train, y_train, num_folds):
     training_size = X_train.shape[0] - validation_size
 
     X_trains = np.zeros((num_folds, training_size, X_train.shape[1]))
-    y_trains = np.zeros((num_folds, training_size), dtype=np.int)
+    y_trains = np.zeros((num_folds, training_size), dtype=int)
     X_vals = np.zeros((num_folds, validation_size, X_train.shape[1]))
-    y_vals = np.zeros((num_folds, validation_size), dtype=np.int)
+    y_vals = np.zeros((num_folds, validation_size), dtype=int)
 
     # YOUR CODE HERE
     # Hint: You can use the numpy array_split function.
-    pass
+    features = np.array_split(X_train, num_folds, axis=0)
+    labels = np.array_split(y_train, num_folds, axis=0)
+    for i in range(num_folds):
+        X_vals[i] = features[i]
+        y_vals[i] = labels[i]
+        X_trains[i] = np.concatenate(features[:i] + features[i+1:], axis=0)
+        y_trains[i] = np.concatenate(labels[:i] + labels[i+1:], axis=0)
     # END YOUR CODE
 
     return X_trains, y_trains, X_vals, y_vals
