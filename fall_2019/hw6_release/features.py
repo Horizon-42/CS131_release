@@ -42,7 +42,12 @@ class PCA(object):
         # YOUR CODE HERE
         # 1. Compute the mean and store it in self.mean
         # 2. Apply either method to `X_centered`
-        pass
+        self.mean = np.mean(X, axis=0)
+        X_centered = X - self.mean
+        if method == 'svd':
+            self.W_pca, _ = self._svd(X_centered)
+        elif method == 'eigen':
+            self.W_pca, _ = self._eigen_decomp(X_centered)
         # END YOUR CODE
 
         # Make sure that X_centered has mean zero
@@ -80,7 +85,15 @@ class PCA(object):
         #     1. compute the covariance matrix of X, of shape (D, D)
         #     2. compute the eigenvalues and eigenvectors of the covariance matrix
         #     3. Sort both of them in decreasing order (ex: 1.0 > 0.5 > 0.0 > -0.2 > -1.2)
-        pass
+
+        cm = np.dot(X.T, X) / (N-1)
+
+        e_vals, e_vecs = np.linalg.eig(cm)
+        # sort the eigenvalues and eigenvectors in descending order
+        idx = np.argsort(-e_vals)
+        e_vals = e_vals[idx]
+        e_vecs = e_vecs[:, idx]
+
         # END YOUR CODE
 
         # Check the output shapes
@@ -105,7 +118,10 @@ class PCA(object):
         # YOUR CODE HERE
         # Here, compute the SVD of X
         # Make sure to return vecs as the matrix of vectors where each column is a singular vector
-        pass
+
+        _, vals, v = np.linalg.svd(X)
+        vecs = v.T
+
         # END YOUR CODE
         assert vecs.shape == (D, D)
         K = min(N, D)
@@ -129,10 +145,13 @@ class PCA(object):
         # We need to modify X in two steps:
         #     1. first substract the mean stored during `fit`
         #     2. then project onto a subspace of dimension `n_components` using `self.W_pca`
-        pass
+        X_proj = X - self.mean
+        X_proj = X_proj @ self.W_pca[:, :n_components]
+        # self.W_pca 是矩阵的特征向量，可以将X_proj投影到低维空间
         # END YOUR CODE
 
-        assert X_proj.shape == (N, n_components), "X_proj doesn't have the right shape"
+        assert X_proj.shape == (
+            N, n_components), "X_proj doesn't have the right shape"
 
         return X_proj
 
@@ -155,7 +174,22 @@ class PCA(object):
         # Steps:
         #     1. project back onto the original space of dimension D
         #     2. add the mean that we substracted in `transform`
-        pass
+        X = X_proj @ self.W_pca[:, :n_components].T + self.mean
+        # q: why do we need to transpose self.W_pca[:, :n_components]
+        # a: because we want to project X_proj onto the original space of dimension D
+        #    self.W_pca[:, :n_components] is a matrix of shape (D, n_components)
+        #    we need to transpose it to get a matrix of shape (n_components, D)
+        #    so that we can multiply it with X_proj, which has shape (N, n_components)
+        #    the result will have shape (N, D)
+        # q: why self.W_pca can be used to project X_proj onto the original space of dimension D
+        # a: because self.W_pca is a matrix of eigenvectors
+        #    each column of self.W_pca is an eigenvector
+        #    each eigenvector is orthogonal to each other
+        #    so we can use self.W_pca to project X_proj onto the original space of dimension D
+        # q: why do we need to add the mean that we substracted in `transform`
+        # a: because we want to reconstruct the original X
+        #    we need to add the mean that we substracted in `transform`
+        #    so that the reconstructed X has the same mean as the original X
         # END YOUR CODE
 
         return X
@@ -194,7 +228,24 @@ class LDA(object):
         # Solve generalized eigenvalue problem for matrices `scatter_between` and `scatter_within`
         # Use `scipy.linalg.eig` instead of numpy's eigenvalue solver.
         # Don't forget to sort the values and vectors in descending order.
-        pass
+        e_vals, e_vecs = scipy.linalg.eig(scatter_between, scatter_within)
+        # q: why do we need to use scipy.linalg.eig instead of numpy's eigenvalue solver
+        # a: because numpy's eigenvalue solver can only solve the eigenvalue problem for symmetric matrices
+        #    scatter_between and scatter_within are not symmetric matrices
+        #    so we need to use scipy.linalg.eig instead of numpy's eigenvalue solver
+        # q: what is the meaning of the generalized eigenvalue problem
+        # a: the generalized eigenvalue problem is to solve the eigenvalue problem for non-symmetric matrices
+        # q: what is the meaning of eigen vector of scatter_between and scatter_within
+        # a: the eigen vector of scatter_between and scatter_within is the projection matrix
+        #    we can use the projection matrix to project X onto a lower dimensional space
+        # q: why do we compute the eigenvalue and eigenvector of scatter_between and scatter_within
+        # a: because we want to find the projection matrix
+        #    the projection matrix is the eigen vector of scatter_between and scatter_within
+        #    the eigen value of scatter_between and scatter_within is the variance of the projection matrix
+        #    we want to maximize the variance of the projection matrix
+        idx = np.argsort(-e_vals)
+        e_vals = e_vals[idx]
+        e_vecs = e_vecs[:, idx]
         # END YOUR CODE
 
         self.W_lda = e_vecs
@@ -231,7 +282,10 @@ class LDA(object):
         for i in np.unique(y):
             # YOUR CODE HERE
             # Get the covariance matrix for class i, and add it to scatter_within
-            pass
+            X_i = X[y == i]
+            X_i_centered = X_i - X_i.mean(axis=0)
+            S_i = X_i_centered.T @ X_i_centered
+            scatter_within += S_i
             # END YOUR CODE
 
         return scatter_within
@@ -257,7 +311,11 @@ class LDA(object):
         mu = X.mean(axis=0)
         for i in np.unique(y):
             # YOUR CODE HERE
-            pass
+            X_i = X[y == i]
+            mu_i = X_i.mean(axis=0)
+
+            scatter_between += X_i.shape[0] * (mu_i - mu) @ (mu_i - mu).T
+
             # END YOUR CODE
 
         return scatter_between
@@ -276,9 +334,10 @@ class LDA(object):
         X_proj = None
         # YOUR CODE HERE
         # project onto a subspace of dimension `n_components` using `self.W_lda`
-        pass
+        X_proj = X @ self.W_lda[:, :n_components]
         # END YOUR CODE
 
-        assert X_proj.shape == (N, n_components), "X_proj doesn't have the right shape"
+        assert X_proj.shape == (
+            N, n_components), "X_proj doesn't have the right shape"
 
         return X_proj

@@ -30,9 +30,6 @@ def compute_distances(X1, X2):
     dists = np.sqrt(np.sum(X1**2, axis=1).reshape(M, 1) +
                     np.sum(X2**2, axis=1) - 2 * np.dot(X1, X2.T))
 
-    import scipy
-    dists_validiation = scipy.spatial.distance.cdist(X1, X2, 'euclidean')
-    assert np.allclose(dists, dists_validiation)
     # END YOUR CODE
 
     assert dists.shape == (
