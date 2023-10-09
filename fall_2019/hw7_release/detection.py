@@ -22,9 +22,10 @@ def hog_feature(image, pixel_per_cell=8):
         score: a vector of hog representation.
         hogImage: an image representation of hog provided by skimage.
     """
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    # YOUR CODE HERE
+    hogFeature, hogImage = feature.hog(image, pixels_per_cell=(
+        pixel_per_cell, pixel_per_cell), feature_vector=False, visualize=True)
+    # END YOUR CODE
     return (hogFeature, hogImage)
 
 
@@ -61,9 +62,9 @@ def sliding_window(image, base_score, stepSize, windowSize, pixel_per_cell=8):
           winW - winW // 2)),
         mode='constant')
     response_map = np.zeros((H // stepSize + 1, W // stepSize + 1))
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     return (max_score, maxr, maxc, response_map)
 
@@ -96,9 +97,9 @@ def pyramid(image, scale=0.9, minSize=(200, 100)):
     while True:
         # Use "break" to exit this loop if the next image will be smaller than
         # the supplied minimium size
-        ### YOUR CODE HERE
+        # YOUR CODE HERE
         pass
-        ### END YOUR CODE
+        # END YOUR CODE
 
         # Compute the new dimensions of the image and resize it
         current_scale *= scale
@@ -133,9 +134,9 @@ def pyramid_score(image, base_score, shape, stepSize=20,
     max_scale = 1.0
     max_response_map = np.zeros(image.shape)
     images = pyramid(image, scale)
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
     return max_score, maxr, maxc, max_scale, max_response_map
 
 
@@ -159,9 +160,9 @@ def compute_displacement(part_centers, face_shape):
 
     """
     d = np.zeros((part_centers.shape[0], 2))
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
     return mu, sigma
 
 
@@ -178,9 +179,9 @@ def shift_heatmap(heatmap, mu):
         Returns:
             new_heatmap: np array of (h,w).
     """
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
     return new_heatmap
 
 
@@ -198,9 +199,9 @@ def gaussian_heatmap(heatmap_face, heatmaps, sigmas):
     Return:
         new_image: an image np array of (h,w) after gaussian convoluted.
     """
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
     return heatmap, r, c
 
 
@@ -208,7 +209,7 @@ def detect_multiple(image, response_map):
     """
     Extra credit
     """
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
     return detected_faces

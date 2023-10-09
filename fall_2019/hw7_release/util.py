@@ -41,7 +41,7 @@ def read_facial_labels(image_paths):
             break
         parts = line.strip().split(' ')
         parts = list(filter(None, parts))
-        #print(line,parts)
+        # print(line,parts)
         image_file = parts[0]
         if image_file in image_paths:
             lefteye_c = int(parts[1])
@@ -68,10 +68,10 @@ def read_facial_labels(image_paths):
 
 
 def load_faces(image_paths, n):
-    face_shape = io.imread('./face/' + image_paths[0], as_grey=True).shape
+    face_shape = io.imread('./face/' + image_paths[0], as_gray=True).shape
     avg_face = np.zeros((face_shape))
     for image_path in image_paths:
-        image = io.imread('./face/' + image_path, as_grey=True)
+        image = io.imread('./face/' + image_path, as_gray=True)
         avg_face = np.asarray(image) + np.asarray(avg_face)
     avg_face = avg_face / n
     return face_shape, avg_face
