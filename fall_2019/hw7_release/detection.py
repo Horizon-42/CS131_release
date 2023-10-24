@@ -23,8 +23,9 @@ def hog_feature(image, pixel_per_cell=8):
         hogImage: an image representation of hog provided by skimage.
     """
     # YOUR CODE HERE
-    hogFeature, hogImage = feature.hog(image, pixels_per_cell=(
-        pixel_per_cell, pixel_per_cell), feature_vector=False, visualize=True)
+    hogFeature, hogImage = feature.hog(image, orientations=8,  pixels_per_cell=(
+        pixel_per_cell, pixel_per_cell), visualize=True)
+    hogFeature /= np.linalg.norm(hogFeature)
     # END YOUR CODE
     return (hogFeature, hogImage)
 
@@ -63,7 +64,17 @@ def sliding_window(image, base_score, stepSize, windowSize, pixel_per_cell=8):
         mode='constant')
     response_map = np.zeros((H // stepSize + 1, W // stepSize + 1))
     # YOUR CODE HERE
-    pass
+    for r in range(0, H+1, stepSize):
+        for c in range(0, W+1, stepSize):
+            window = pad_image[r:r+winH, c:c+winW]
+            hogFeature, _ = hog_feature(window, pixel_per_cell=pixel_per_cell)
+            score = hogFeature.T.dot(base_score)
+            response_map[r//stepSize, c//stepSize] = score
+            if score > max_score:
+                max_score = score
+                maxr = r-winH//2
+                maxc = c-winW//2
+    response_map = resize(response_map, (H, W))
     # END YOUR CODE
 
     return (max_score, maxr, maxc, response_map)
@@ -98,7 +109,8 @@ def pyramid(image, scale=0.9, minSize=(200, 100)):
         # Use "break" to exit this loop if the next image will be smaller than
         # the supplied minimium size
         # YOUR CODE HERE
-        pass
+        if image.shape[0]*scale < minSize[0] or image.shape[1]*scale <= minSize[1]:
+            break
         # END YOUR CODE
 
         # Compute the new dimensions of the image and resize it
@@ -134,8 +146,19 @@ def pyramid_score(image, base_score, shape, stepSize=20,
     max_scale = 1.0
     max_response_map = np.zeros(image.shape)
     images = pyramid(image, scale)
+    print("len of images: ", len(images))
     # YOUR CODE HERE
-    pass
+    for current_scale, img in images:
+        score, r, c, response_map = sliding_window(
+            img, base_score, stepSize, shape, pixel_per_cell=pixel_per_cell)
+        print("score: ", score)
+        print("scale: ", current_scale)
+        if score > max_score:
+            max_score = score
+            maxr = r
+            maxc = c
+            max_scale = current_scale
+            max_response_map = response_map
     # END YOUR CODE
     return max_score, maxr, maxc, max_scale, max_response_map
 
@@ -161,7 +184,10 @@ def compute_displacement(part_centers, face_shape):
     """
     d = np.zeros((part_centers.shape[0], 2))
     # YOUR CODE HERE
-    pass
+    main_center = np.asarray(face_shape)/2
+    d = main_center - part_centers
+    mu = np.mean(d, axis=0, dtype=int)
+    sigma = np.std(d, axis=0)
     # END YOUR CODE
     return mu, sigma
 
@@ -180,7 +206,8 @@ def shift_heatmap(heatmap, mu):
             new_heatmap: np array of (h,w).
     """
     # YOUR CODE HERE
-    pass
+    new_heatmap = heatmap/np.max(heatmap)
+    new_heatmap = interpolation.shift(new_heatmap, mu)
     # END YOUR CODE
     return new_heatmap
 

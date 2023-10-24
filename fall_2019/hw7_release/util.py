@@ -9,7 +9,7 @@ from skimage.filters import gaussian
 #     f = open(label_path, "r")
 #     f.readline()
 #     f.readline()
-#     faces = np.array([],dtype=np.int).reshape(0,4)
+#     faces = np.array([],dtype=int).reshape(0,4)
 #     for line in f:
 #         if faces.shape[0]>40:
 #             break
@@ -32,10 +32,10 @@ def read_facial_labels(image_paths):
     f = open(label_path, "r")
     f.readline()
     f.readline()
-    lefteyes = np.array([], dtype=np.int).reshape(0, 2)
-    righteyes = np.array([], dtype=np.int).reshape(0, 2)
-    noses = np.array([], dtype=np.int).reshape(0, 2)
-    mouths = np.array([], dtype=np.int).reshape(0, 2)
+    lefteyes = np.array([], dtype=int).reshape(0, 2)
+    righteyes = np.array([], dtype=int).reshape(0, 2)
+    noses = np.array([], dtype=int).reshape(0, 2)
+    mouths = np.array([], dtype=int).reshape(0, 2)
     for line in f:
         if lefteyes.shape[0] > 40:
             break
@@ -83,7 +83,7 @@ def get_detector(part_h, part_w, parts, image_paths):
     avg_part = np.zeros((part_shape))
     image_paths = sorted(image_paths)
     for i, image_path in enumerate(image_paths):
-        image = io.imread('./face/' + image_path, as_grey=True)
+        image = io.imread('./face/' + image_path, as_gray=True)
         part_r = parts[i][0]
         part_c = parts[i][1]
 #         print(image_path, part_r, part_w, part_r-part_h/2, part_r+part_h/2)
