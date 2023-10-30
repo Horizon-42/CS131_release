@@ -227,16 +227,37 @@ def gaussian_heatmap(heatmap_face, heatmaps, sigmas):
         new_image: an image np array of (h,w) after gaussian convoluted.
     """
     # YOUR CODE HERE
-    pass
+    heatmap = np.copy(heatmap_face)
+    for i in range(len(heatmaps)):
+        heatmaps[i] = gaussian(heatmaps[i], sigmas[i])
+        heatmap_face += heatmaps[i]
+    index = np.argmax(heatmap)
+    r = index//heatmap.shape[1]
+    c = index % heatmap.shape[1]
     # END YOUR CODE
     return heatmap, r, c
 
 
-def detect_multiple(image, response_map):
+def detect_multiple(winW, winH, response_map):
     """
     Extra credit
     """
     # YOUR CODE HERE
-    pass
+    detected_faces = []
+    # 依次获取response_map中的最大值，直到最大值小于0.5
+    # max_value = np.max(response_map)
+    # mean_value = np.mean(response_map)
+    # min_value = np.min(response_map)
+    # print("max_value: ", max_value)
+    # print("mean_value: ", mean_value)
+    # print("min_value: ", min_value)
+    res = np.copy(response_map)
+    while np.max(res) > 1.0 and len(detected_faces) < 10:
+        index = np.argmax(res)
+        r = index//res.shape[1]
+        c = index % res.shape[1]
+        detected_faces.append((r, c))
+        res[r-winH//2:r+winH//2, c-winW//2:c+winW//2] = 0
+
     # END YOUR CODE
     return detected_faces
