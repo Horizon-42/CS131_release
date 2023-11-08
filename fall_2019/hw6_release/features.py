@@ -228,21 +228,10 @@ class LDA(object):
         # Solve generalized eigenvalue problem for matrices `scatter_between` and `scatter_within`
         # Use `scipy.linalg.eig` instead of numpy's eigenvalue solver.
         # Don't forget to sort the values and vectors in descending order.
-        e_vals, e_vecs = scipy.linalg.eig(scatter_between, scatter_within)
-        # q: why do we need to use scipy.linalg.eig instead of numpy's eigenvalue solver
-        # a: because numpy's eigenvalue solver can only solve the eigenvalue problem for symmetric matrices
-        #    scatter_between and scatter_within are not symmetric matrices
-        #    so we need to use scipy.linalg.eig instead of numpy's eigenvalue solver
-        # q: what is the meaning of the generalized eigenvalue problem
-        # a: the generalized eigenvalue problem is to solve the eigenvalue problem for non-symmetric matrices
-        # q: what is the meaning of eigen vector of scatter_between and scatter_within
-        # a: the eigen vector of scatter_between and scatter_within is the projection matrix
-        #    we can use the projection matrix to project X onto a lower dimensional space
-        # q: why do we compute the eigenvalue and eigenvector of scatter_between and scatter_within
-        # a: because we want to find the projection matrix
-        #    the projection matrix is the eigen vector of scatter_between and scatter_within
-        #    the eigen value of scatter_between and scatter_within is the variance of the projection matrix
-        #    we want to maximize the variance of the projection matrix
+
+        e_vals, e_vecs = scipy.linalg.eig(
+            scatter_between, scatter_within)
+
         idx = np.argsort(-e_vals)
         e_vals = e_vals[idx]
         e_vecs = e_vecs[:, idx]
