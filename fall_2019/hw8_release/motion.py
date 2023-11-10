@@ -12,6 +12,7 @@ from skimage.transform import pyramid_gaussian
 from skimage.filters import sobel_h, sobel_v, gaussian
 from skimage.feature import corner_harris, corner_peaks
 
+
 def lucas_kanade(img1, img2, keypoints, window_size=5):
     """ Estimate flow vector at each keypoint using Lucas-Kanade method.
 
@@ -48,13 +49,19 @@ def lucas_kanade(img1, img2, keypoints, window_size=5):
         # locations can be computed using bilinear interpolation.
         y, x = int(round(y)), int(round(x))
 
-        ### YOUR CODE HERE
-        pass
-        ### END YOUR CODE
+        # YOUR CODE HERE
+        A_x = Ix[y-w:y+w+1, x-w:x+w+1].flatten()
+        A_y = Iy[y-w:y+w+1, x-w:x+w+1].flatten()
+        A = np.vstack((A_x, A_y)).T
+        b = -It[y-w:y+w+1, x-w:x+w+1].flatten()
+        v = np.linalg.inv(A.T @ A) @ A.T @ b
+        flow_vectors.append(v)
+        # END YOUR CODE
 
     flow_vectors = np.array(flow_vectors)
 
     return flow_vectors
+
 
 def iterative_lucas_kanade(img1, img2, keypoints,
                            window_size=9,
@@ -89,25 +96,35 @@ def iterative_lucas_kanade(img1, img2, keypoints,
     Iy, Ix = np.gradient(img1)
 
     for y, x, gy, gx in np.hstack((keypoints, g)):
-        v = np.zeros(2) # Initialize flow vector as zero vector
-        y1 = int(round(y)); x1 = int(round(x))
-
+        v = np.zeros(2)  # Initialize flow vector as zero vector
+        y1 = int(round(y))
+        x1 = int(round(x))
 
         # TODO: Compute inverse of G at point (x1, y1)
-        ### YOUR CODE HERE
-        pass
-        ### END YOUR CODE
+        # YOUR CODE HERE
+        G = np.zeros((2, 2))
+        G[0, 0] = np.sum(Ix[y1-w:y1+w+1, x1-w:x1+w+1]**2)
+        G[0, 1] = np.sum(Ix[y1-w:y1+w+1, x1-w:x1+w+1]
+                         * Iy[y1-w:y1+w+1, x1-w:x1+w+1])
+        G[1, 0] = G[0, 1]
+        G[1, 1] = np.sum(Iy[y1-w:y1+w+1, x1-w:x1+w+1]**2)
+        # END YOUR CODE
 
         # iteratively update flow vector
         for k in range(num_iters):
             vx, vy = v
             # Refined position of the point in the next frame
-            y2 = int(round(y+gy+vy)); x2 = int(round(x+gx+vx))
+            y2 = int(round(y+gy+vy))
+            x2 = int(round(x+gx+vx))
 
             # TODO: Compute bk and vk = inv(G) x bk
-            ### YOUR CODE HERE
-            pass
-            ### END YOUR CODE
+            # YOUR CODE HERE
+            Ik = img1[y1-w:y1+w+1, x1-w:x1+w+1] - \
+                img2[y2-w:y2+w+1, x2-w:x2+w+1]
+            bk = np.array([np.sum(Ik*Ix[y1-w:y1+w+1, x1-w:x1+w+1]),
+                           np.sum(Ik*Iy[y1-w:y1+w+1, x1-w:x1+w+1])])
+            vk = np.linalg.inv(G) @ bk
+            # END YOUR CODE
 
             # Update flow vector by vk
             v += vk
@@ -116,12 +133,11 @@ def iterative_lucas_kanade(img1, img2, keypoints,
         flow_vectors.append([vy, vx])
 
     return np.array(flow_vectors)
-        
+
 
 def pyramid_lucas_kanade(img1, img2, keypoints,
                          window_size=9, num_iters=7,
                          level=2, scale=2):
-
     """ Pyramidal Lucas Kanade method
 
     Args:
@@ -146,12 +162,13 @@ def pyramid_lucas_kanade(img1, img2, keypoints,
     g = np.zeros(keypoints.shape)
 
     for L in range(level, -1, -1):
-        ### YOUR CODE HERE
+        # YOUR CODE HERE
         pass
-        ### END YOUR CODE
+        # END YOUR CODE
 
     d = g + d
     return d
+
 
 def compute_error(patch1, patch2):
     """ Compute MSE between patch1 and patch2
@@ -167,17 +184,19 @@ def compute_error(patch1, patch2):
     """
     assert patch1.shape == patch2.shape, 'Differnt patch shapes'
     error = 0
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    # YOUR CODE HERE
+    p1_norm = (patch1 - patch1.min()) / (patch1.max() - patch1.min())
+    p2_norm = (patch2 - patch2.min()) / (patch2.max() - patch2.min())
+    error = np.mean((p1_norm - p2_norm)**2)
+    # END YOUR CODE
     return error
+
 
 def track_features(frames, keypoints,
                    error_thresh=1.5,
                    optflow_fn=pyramid_lucas_kanade,
                    exclude_border=5,
                    **kwargs):
-
     """ Track keypoints over multiple frames
 
     Args:
@@ -196,8 +215,8 @@ def track_features(frames, keypoints,
 
     kp_curr = keypoints
     trajs = [kp_curr]
-    patch_size = 3 # Take 3x3 patches to compute error
-    w = patch_size // 2 # patch_size//2 around a pixel
+    patch_size = 3  # Take 3x3 patches to compute error
+    w = patch_size // 2  # patch_size//2 around a pixel
 
     for i in range(len(frames) - 1):
         I = frames[i]
@@ -211,8 +230,10 @@ def track_features(frames, keypoints,
             # 1. the keypoint falls outside the image J
             # 2. the error between points in I and J is larger than threshold
 
-            yi = int(round(yi)); xi = int(round(xi))
-            yj = int(round(yj)); xj = int(round(xj))
+            yi = int(round(yi))
+            xi = int(round(xi))
+            yj = int(round(yj))
+            xj = int(round(xj))
             # Point falls outside the image
             if yj > J.shape[0]-exclude_border-1 or yj < exclude_border or\
                xj > J.shape[1]-exclude_border-1 or xj < exclude_border:
@@ -248,10 +269,8 @@ def IoU(bbox1, bbox2):
     x2, y2, w2, h2 = bbox2
     score = 0
 
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     return score
-
-

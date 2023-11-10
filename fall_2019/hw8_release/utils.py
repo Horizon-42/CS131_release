@@ -7,11 +7,13 @@ from skimage import filters, img_as_float
 
 import os
 
+
 def load_frames(imgs_dir):
-    frames = [img_as_float(imread(os.path.join(imgs_dir, frame), 
-                                               as_grey=True)) \
+    frames = [img_as_float(imread(os.path.join(imgs_dir, frame),
+                                  as_gray=True))
               for frame in sorted(os.listdir(imgs_dir))]
     return frames
+
 
 def load_bboxes(gt_path):
     bboxes = []
@@ -21,7 +23,8 @@ def load_bboxes(gt_path):
             bboxes.append((int(x), int(y), int(w), int(h)))
     return bboxes
 
-def animated_frames(frames, figsize=(10,8)):
+
+def animated_frames(frames, figsize=(10, 8)):
     fig, ax = plt.subplots(figsize=figsize)
     ax.axis('off')
     im = ax.imshow(frames[0])
@@ -35,19 +38,20 @@ def animated_frames(frames, figsize=(10,8)):
 
     return ani
 
-def animated_scatter(frames, trajs, figsize=(10,8)):
+
+def animated_scatter(frames, trajs, figsize=(10, 8)):
     fig, ax = plt.subplots(figsize=figsize)
     ax.axis('off')
     im = ax.imshow(frames[0])
-    scat = ax.scatter(trajs[0][:,1], trajs[0][:,0],
+    scat = ax.scatter(trajs[0][:, 1], trajs[0][:, 0],
                       facecolors='none', edgecolors='r')
 
     def animate(i):
         im.set_array(frames[i])
         if len(trajs[i]) > 0:
-            scat.set_offsets(trajs[i][:,[1,0]])
-        else: # If no trajs to draw
-            scat.set_offsets([]) # clear the scatter plot
+            scat.set_offsets(trajs[i][:, [1, 0]])
+        else:  # If no trajs to draw
+            scat.set_offsets([])  # clear the scatter plot
 
         return [im, scat,]
 
@@ -56,12 +60,13 @@ def animated_scatter(frames, trajs, figsize=(10,8)):
 
     return ani
 
-def animated_bbox(frames, bboxes, figsize=(10,8)):
+
+def animated_bbox(frames, bboxes, figsize=(10, 8)):
     fig, ax = plt.subplots(figsize=figsize)
     ax.axis('off')
     im = ax.imshow(frames[0])
     x, y, w, h = bboxes[0]
-    bbox = ax.add_patch(Rectangle((x,y),w,h, linewidth=3,
+    bbox = ax.add_patch(Rectangle((x, y), w, h, linewidth=3,
                                   edgecolor='r', facecolor='none'))
 
     def animate(i):
