@@ -55,7 +55,7 @@ def lucas_kanade(img1, img2, keypoints, window_size=5):
         A = np.vstack((A_x, A_y)).T
         b = -It[y-w:y+w+1, x-w:x+w+1].flatten()
         v = np.linalg.inv(A.T @ A) @ A.T @ b
-        flow_vectors.append(v)
+        flow_vectors.append([v[1], v[0]])
         # END YOUR CODE
 
     flow_vectors = np.array(flow_vectors)
@@ -119,11 +119,14 @@ def iterative_lucas_kanade(img1, img2, keypoints,
 
             # TODO: Compute bk and vk = inv(G) x bk
             # YOUR CODE HERE
+            if y2-w < 0 or y2+w+1 > img2.shape[0] or x2-w < 0 or x2+w+1 > img2.shape[1]:
+                break
             Ik = img1[y1-w:y1+w+1, x1-w:x1+w+1] - \
                 img2[y2-w:y2+w+1, x2-w:x2+w+1]
             bk = np.array([np.sum(Ik*Ix[y1-w:y1+w+1, x1-w:x1+w+1]),
                            np.sum(Ik*Iy[y1-w:y1+w+1, x1-w:x1+w+1])])
             vk = np.linalg.inv(G) @ bk
+
             # END YOUR CODE
 
             # Update flow vector by vk
@@ -161,9 +164,12 @@ def pyramid_lucas_kanade(img1, img2, keypoints,
     # Initialize pyramidal guess
     g = np.zeros(keypoints.shape)
 
+    d = np.zeros(keypoints.shape)
     for L in range(level, -1, -1):
         # YOUR CODE HERE
-        pass
+        d = iterative_lucas_kanade(
+            pyramid1[L], pyramid2[L], keypoints=keypoints/(scale**L), window_size=window_size, num_iters=num_iters, g=g)
+        g = scale * (g + d)
         # END YOUR CODE
 
     d = g + d
@@ -185,9 +191,10 @@ def compute_error(patch1, patch2):
     assert patch1.shape == patch2.shape, 'Differnt patch shapes'
     error = 0
     # YOUR CODE HERE
-    p1_norm = (patch1 - patch1.min()) / (patch1.max() - patch1.min())
-    p2_norm = (patch2 - patch2.min()) / (patch2.max() - patch2.min())
+    p1_norm = (patch1-patch1.min())/(patch1.max()-patch1.min())
+    p2_norm = (patch2-patch2.min())/(patch2.max()-patch2.min())
     error = np.mean((p1_norm - p2_norm)**2)
+    # print(error)
     # END YOUR CODE
     return error
 
@@ -247,6 +254,10 @@ def track_features(frames, keypoints,
                 continue
 
             new_keypoints.append([yj, xj])
+
+        # print('Number of keypoints:', kp_curr.shape[0])
+        # print('Number of lost keypoints:',
+        #       kp_curr.shape[0] - len(new_keypoints))
 
         kp_curr = np.array(new_keypoints)
         trajs.append(kp_curr)

@@ -47,9 +47,14 @@ def lucas_kanade(img1, img2, keypoints, window_size=5):
         # locations can be computed using bilinear interpolation.
         y, x = int(round(y)), int(round(x))
 
-        ### YOUR CODE HERE
-        pass
-        ### END YOUR CODE
+        # YOUR CODE HERE
+        Ax = Ix[y - w: y + w + 1, x - w: x + w + 1].flatten()
+        Ay = Iy[y - w: y + w + 1, x - w: x + w + 1].flatten()
+        b = (-It[y - w: y + w + 1, x - w: x + w + 1].flatten()).T
+        A = np.vstack([Ax, Ay])
+        v = np.linalg.inv(A@A.T)@(A@b).flatten()
+        flow_vectors.append([v[1], v[0]])
+        # END YOUR CODE
 
     flow_vectors = np.array(flow_vectors)
 
@@ -91,9 +96,17 @@ def iterative_lucas_kanade(img1, img2, keypoints, window_size=9, num_iters=7, g=
         x1 = int(round(x))
 
         # TODO: Compute inverse of G at point (x1, y1)
-        ### YOUR CODE HERE
-        pass
-        ### END YOUR CODE
+        # YOUR CODE HERE
+        if y1-w < 0 or y1+w+1 > img1.shape[0] or x1-w < 0 or x1+w+1 > img1.shape[1]:
+            break
+
+        G = np.zeros((2, 2), dtype=float)
+        G[0, 0] = np.sum(Ix[y1-w:y1+w+1, x1-w:x1+w+1]**2)
+        G[1, 0] = np.sum(Ix[y1-w:y1+w+1, x1-w:x1+w+1]
+                         * Iy[y1-w:y1+w+1, x1-w:x1+w+1])
+        G[0, 1] = G[1, 0]
+        G[1, 1] = np.sum(Iy[y1-w:y1+w+1, x1-w:x1+w+1]**2)
+        # END YOUR CODE
 
         # Iteratively update flow vector
         for k in range(num_iters):
@@ -103,9 +116,20 @@ def iterative_lucas_kanade(img1, img2, keypoints, window_size=9, num_iters=7, g=
             x2 = int(round(x + gx + vx))
 
             # TODO: Compute bk and vk = inv(G) x bk
-            ### YOUR CODE HERE
-            pass
-            ### END YOUR CODE
+            # YOUR CODE HERE
+            if y2-w < 0 or y2+w+1 > img1.shape[0] or x2-w < 0 or x2+w+1 > img1.shape[1]:
+                break
+
+            Ik = img1[y1-w:y1+w+1, x1-w:x1+w+1] - \
+                img2[y2-w:y2+w+1, x2-w:x2+w+1]
+            bk = np.array(
+                [
+                    np.sum(Ik*Ix[y1-w:y1+w+1, x1-w:x1+w+1]),
+                    np.sum(Ik*Iy[y1-w:y1+w+1, x1-w:x1+w+1]),
+                ]
+            )
+            vk = np.linalg.inv(G)@bk
+            # END YOUR CODE
 
             # Update flow vector by vk
             v += vk
@@ -119,7 +143,6 @@ def iterative_lucas_kanade(img1, img2, keypoints, window_size=9, num_iters=7, g=
 def pyramid_lucas_kanade(
     img1, img2, keypoints, window_size=9, num_iters=7, level=2, scale=2
 ):
-
     """Pyramidal Lucas Kanade method
 
     Args:
@@ -144,9 +167,13 @@ def pyramid_lucas_kanade(
     g = np.zeros(keypoints.shape)
 
     for L in range(level, -1, -1):
-        ### YOUR CODE HERE
-        pass
-        ### END YOUR CODE
+        # YOUR CODE HERE
+        pl = keypoints/(scale**L)
+        d = iterative_lucas_kanade(
+            pyramid1[L], pyramid2[L], pl, window_size, num_iters, g)
+        if L != 0:
+            g = scale*(g+d)
+    # END YOUR CODE
 
     d = g + d
     return d
@@ -166,9 +193,11 @@ def compute_error(patch1, patch2):
     """
     assert patch1.shape == patch2.shape, "Different patch shapes"
     error = 0
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    # YOUR CODE HERE
+    norm_patch1 = (patch1 - np.mean(patch1))/np.std(patch1)
+    norm_patch2 = (patch2 - np.mean(patch2))/np.std(patch2)
+    error = np.sum((norm_patch1-norm_patch2)**2)/(patch1.shape[0]**2)
+    # END YOUR CODE
     return error
 
 
@@ -180,7 +209,6 @@ def track_features(
     exclude_border=5,
     **kwargs
 ):
-
     """Track keypoints over multiple frames
 
     Args:
@@ -228,8 +256,8 @@ def track_features(
                 continue
 
             # Compute error between patches in image I and J
-            patchI = I[yi - w : yi + w + 1, xi - w : xi + w + 1]
-            patchJ = J[yj - w : yj + w + 1, xj - w : xj + w + 1]
+            patchI = I[yi - w: yi + w + 1, xi - w: xi + w + 1]
+            patchJ = J[yj - w: yj + w + 1, xj - w: xj + w + 1]
             error = compute_error(patchI, patchJ)
             if error > error_thresh:
                 continue
@@ -257,8 +285,8 @@ def IoU(bbox1, bbox2):
     x2, y2, w2, h2 = bbox2
     score = 0
 
-    ### YOUR CODE HERE
+    # YOUR CODE HERE
     pass
-    ### END YOUR CODE
+    # END YOUR CODE
 
     return score
