@@ -171,11 +171,10 @@ def pyramid_lucas_kanade(
         pl = keypoints/(scale**L)
         d = iterative_lucas_kanade(
             pyramid1[L], pyramid2[L], pl, window_size, num_iters, g)
-        if L != 0:
-            g = scale*(g+d)
+        g = scale*(g+d)
     # END YOUR CODE
 
-    d = g + d
+    d = g/scale
     return d
 
 
@@ -286,7 +285,13 @@ def IoU(bbox1, bbox2):
     score = 0
 
     # YOUR CODE HERE
-    pass
+    inter_x = min(x1+w1, x2+w2) - max(x1, x2)
+    inter_y = min(y1+h1, y2+h2) - max(y1, y2)
+    if inter_x < 0 or inter_y < 0:
+        return 0
+    inter_area = inter_x * inter_y
+    union_area = w1*h1 + w2*h2 - inter_area
+    score = inter_area/union_area
     # END YOUR CODE
 
     return score
